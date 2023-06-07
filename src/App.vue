@@ -159,9 +159,5 @@ function addType(item: any) {
     <div class="mt-3">
       <singleMovie :movie="singleMovieFilter" v-if="singleMovieFilter" />
     </div>
-
-    <!-- {{ .Poster }}
-
-    <img :src="movieCreated.Poster" alt="" width="200" /> -->
   </div>
 </template>
