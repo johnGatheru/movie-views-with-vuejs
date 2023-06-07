@@ -1,85 +1,167 @@
 <script setup lang="ts">
-import { RouterLink, RouterView } from 'vue-router'
-import HelloWorld from './components/HelloWorld.vue'
+import { onMounted, ref, type Ref } from "vue";
+import {
+  getMovie,
+  getByIdorTitle,
+  getByTitle,
+  getAllGenres,
+} from "@/services/fetch";
+import { capitalizeFirstLetter } from "@/services/smallServices";
+import DropdownInput from "./components/DropdownInput.vue";
+import DropDownItem from "./components/DropDownItem.vue";
+import InputData from "./components/inputData.vue";
+import submitButton from "./components/submitButton.vue";
+import singleMovie from "./components/singleMovie.vue";
+import { sortMovies } from "./composables/sortMovies";
+// let url = "https://www.omdbapi.com/?apikey=5389fe45";
+type movie = {
+  Poster: string;
+  Title: string;
+  Type: string;
+  Year: string;
+  imdbiD: string;
+};
+const movieType = ref();
+const yearOfRelease = ref("");
+const movieTitle = ref("");
+const movieId = ref(0);
+const selectedMovieType = ref("movie");
+const types = ref(["movie", "series", "episode"]);
+const genre = ref(["drama", "action", "comedy"]);
+const sortTypes = ref(["Year", "Title"]);
+
+const movieCreated = ref();
+const toSortMovies = ref();
+const singleMovieFilter = ref();
+async function getAllMovies() {
+  let typeMovie = selectedMovieType.value;
+
+  let id = movieId.value;
+
+  let response = await getMovie(typeMovie, id);
+  singleMovieFilter.value = null;
+  movieCreated.value = response.Search as movie;
+  toSortMovies.value = response.Search as movie;
+}
+async function getMovieById() {
+  let year = yearOfRelease.value;
+  let movieType = selectedMovieType.value;
+
+  let title = movieTitle.value;
+  if (year.length) {
+    singleMovieFilter.value = null;
+    let moviesResponse = await getByIdorTitle(year, title, movieType);
+    movieCreated.value = moviesResponse.Search as movie;
+    toSortMovies.value = moviesResponse.Search as movie;
+  } else if (title.length) {
+    let singleResponse = await getByTitle(year, title);
+    singleMovieFilter.value = singleResponse;
+  }
+}
+async function getGenre(gen: string) {
+  let theMovies = await getAllGenres(gen);
+  movieCreated.value = theMovies.Search as movie;
+  toSortMovies.value = theMovies.Search as movie;
+}
+function sortItems(sort: string) {
+  let movies = toSortMovies.value;
+  let sorted = sortMovies(movies, sort);
+  movieCreated.value = sorted;
+}
+
+onMounted(async () => {
+  await getAllMovies();
+});
+function addType(item: any) {
+  selectedMovieType.value = item;
+}
 </script>
 
 <template>
-  <header>
-    <img alt="Vue logo" class="logo" src="@/assets/logo.svg" width="125" height="125" />
+  <div class="p-3 bg-slate-900 text-white min-h-screen relative">
+    <div class="sticky bg-slate-900 inset-x-0 top-0">
+      <h2 class="text-red-600">The movies</h2>
+      <div class="flex gap-4">
+        <div class="flex flex-col">
+          <label for="">Movie Type</label>
+          <DropdownInput
+            placeholder=" select movie type"
+            v-model="selectedMovieType"
+          >
+            <DropDownItem
+              v-for="oneType in types"
+              :key="oneType"
+              @click="addType(oneType)"
+              >{{ capitalizeFirstLetter(oneType) }}</DropDownItem
+            >
+          </DropdownInput>
+        </div>
+        <div class="flex flex-col">
+          <label for="">Select Genre</label>
+          <DropdownInput placeholder=" select movie genre">
+            <DropDownItem
+              v-for="gen in genre"
+              :key="gen"
+              @click="getGenre(gen)"
+              >{{ capitalizeFirstLetter(gen) }}</DropDownItem
+            >
+          </DropdownInput>
+        </div>
 
-    <div class="wrapper">
-      <HelloWorld msg="You did it!" />
+        <div class="flex flex-col">
+          <label for="">Movie Id</label>
+          <InputData placeholder="Payback" v-model="movieId" />
+        </div>
 
-      <nav>
-        <RouterLink to="/">Home</RouterLink>
-        <RouterLink to="/about">About</RouterLink>
-      </nav>
+        <div class="flex flex-col">
+          <label for="" class="text-slate-900">t</label>
+          <submitButton text="Search Movie" @on-clicked="getAllMovies()" />
+        </div>
+      </div>
+      <div class="flex flex-col max-w-xs">
+        <label for="">Sort Movies</label>
+        <DropdownInput placeholder=" sort movies">
+          <DropDownItem
+            v-for="sort in sortTypes"
+            :key="sort"
+            @click="sortItems(sort)"
+            >{{ sort }}</DropDownItem
+          >
+        </DropdownInput>
+      </div>
+      <div class="flex gap-4">
+        <div class="flex flex-col">
+          <label for="">Title</label>
+          <InputData placeholder="Payback" v-model="movieTitle" />
+        </div>
+        <div class="flex flex-col">
+          <label for="">Year of Release</label>
+          <InputData placeholder="2000" v-model="yearOfRelease" />
+        </div>
+        <div class="flex flex-col">
+          <label for="" class="text-slate-900">t</label>
+          <submitButton text="Search Movie" @on-clicked="getMovieById()" />
+        </div>
+      </div>
     </div>
-  </header>
+    <div
+      class="grid grid-cols-1 md:grid-cols-4 gap-4 overflow-x-auto mt-3"
+      v-if="!singleMovieFilter"
+    >
+      <div class="" v-for="item in movieCreated" :key="item">
+        <div class="flex flex-col">
+          <img :src="item.Poster" alt="" class="w-full h-72 object-cover" />
+          <p>{{ item.Title }}</p>
+          <h4>Year: {{ item.Year }}</h4>
+        </div>
+      </div>
+    </div>
+    <div class="mt-3">
+      <singleMovie :movie="singleMovieFilter" v-if="singleMovieFilter" />
+    </div>
 
-  <RouterView />
+    <!-- {{ .Poster }}
+
+    <img :src="movieCreated.Poster" alt="" width="200" /> -->
+  </div>
 </template>
-
-<style scoped>
-header {
-  line-height: 1.5;
-  max-height: 100vh;
-}
-
-.logo {
-  display: block;
-  margin: 0 auto 2rem;
-}
-
-nav {
-  width: 100%;
-  font-size: 12px;
-  text-align: center;
-  margin-top: 2rem;
-}
-
-nav a.router-link-exact-active {
-  color: var(--color-text);
-}
-
-nav a.router-link-exact-active:hover {
-  background-color: transparent;
-}
-
-nav a {
-  display: inline-block;
-  padding: 0 1rem;
-  border-left: 1px solid var(--color-border);
-}
-
-nav a:first-of-type {
-  border: 0;
-}
-
-@media (min-width: 1024px) {
-  header {
-    display: flex;
-    place-items: center;
-    padding-right: calc(var(--section-gap) / 2);
-  }
-
-  .logo {
-    margin: 0 2rem 0 0;
-  }
-
-  header .wrapper {
-    display: flex;
-    place-items: flex-start;
-    flex-wrap: wrap;
-  }
-
-  nav {
-    text-align: left;
-    margin-left: -1rem;
-    font-size: 1rem;
-
-    padding: 1rem 0;
-    margin-top: 1rem;
-  }
-}
-</style>
