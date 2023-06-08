@@ -10,9 +10,11 @@ import { capitalizeFirstLetter } from "@/services/smallServices";
 import DropdownInput from "./components/DropdownInput.vue";
 import DropDownItem from "./components/DropDownItem.vue";
 import InputData from "./components/inputData.vue";
+import loader from "./components/loader.vue";
 import submitButton from "./components/submitButton.vue";
 import singleMovie from "./components/singleMovie.vue";
 import { sortMovies } from "./composables/sortMovies";
+import StarRating from "./components/starRating.vue";
 // let url = "https://www.omdbapi.com/?apikey=5389fe45";
 type movie = {
   Poster: string;
@@ -22,8 +24,11 @@ type movie = {
   imdbiD: string;
 };
 const movieType = ref();
+const sortMovieby = ref();
+const genreType = ref();
 const yearOfRelease = ref("");
 const movieTitle = ref("");
+const loading = ref(false);
 const movieId = ref(0);
 const selectedMovieType = ref("movie");
 const types = ref(["movie", "series", "episode"]);
@@ -34,37 +39,60 @@ const movieCreated = ref();
 const toSortMovies = ref();
 const singleMovieFilter = ref();
 async function getAllMovies() {
+  movieCreated.value = null;
+
+  loading.value = true;
   let typeMovie = selectedMovieType.value;
 
   let id = movieId.value;
 
   let response = await getMovie(typeMovie, id);
   singleMovieFilter.value = null;
+  loading.value = false;
   movieCreated.value = response.Search as movie;
   toSortMovies.value = response.Search as movie;
+  let toBeRated = JSON.stringify(toSortMovies.value);
+  // console.log("movies", toBeRated);
+  let ratings = [];
+  toSortMovies.value.forEach((element: any) => {
+    element.imdbiD;
+  });
+
+  // localStorage.setItem("movie", JSON.stringify(toSortMovies.value));
 }
 async function getMovieById() {
-  let year = yearOfRelease.value;
-  let movieType = selectedMovieType.value;
-
   let title = movieTitle.value;
-  if (year.length) {
-    singleMovieFilter.value = null;
-    let moviesResponse = await getByIdorTitle(year, title, movieType);
-    movieCreated.value = moviesResponse.Search as movie;
-    toSortMovies.value = moviesResponse.Search as movie;
-  } else if (title.length) {
-    let singleResponse = await getByTitle(year, title);
-    singleMovieFilter.value = singleResponse;
-  }
+  let year = yearOfRelease.value;
+  if (year.length || title.length) {
+    movieCreated.value = null;
+    loading.value = true;
+    let movieType = selectedMovieType.value;
+
+    if (year.length) {
+      singleMovieFilter.value = null;
+      let moviesResponse = await getByIdorTitle(year, title, movieType);
+      movieCreated.value = moviesResponse.Search as movie;
+      toSortMovies.value = moviesResponse.Search as movie;
+      loading.value = false;
+    } else if (title.length) {
+      let singleResponse = await getByTitle(year, title);
+      singleMovieFilter.value = singleResponse;
+      loading.value = false;
+    }
+  } else alert("Please enter year or id");
 }
 async function getGenre(gen: string) {
+  genreType.value = gen;
+  movieCreated.value = null;
+  loading.value = true;
   let theMovies = await getAllGenres(gen);
+  loading.value = false;
   movieCreated.value = theMovies.Search as movie;
   toSortMovies.value = theMovies.Search as movie;
 }
 function sortItems(sort: string) {
   let movies = toSortMovies.value;
+  sortMovieby.value = sort;
   let sorted = sortMovies(movies, sort);
   movieCreated.value = sorted;
 }
@@ -80,7 +108,7 @@ function addType(item: any) {
 <template>
   <div class="p-3 bg-slate-900 text-white min-h-screen relative">
     <div class="sticky bg-slate-900 inset-x-0 top-0">
-      <h2 class="text-red-600">The movies</h2>
+      <h2 class="text-red-600 font-bold">Movie Filter</h2>
       <div class="flex gap-4">
         <div class="flex flex-col">
           <label for="">Movie Type</label>
@@ -98,7 +126,7 @@ function addType(item: any) {
         </div>
         <div class="flex flex-col">
           <label for="">Select Genre</label>
-          <DropdownInput placeholder=" select movie genre">
+          <DropdownInput placeholder=" select movie genre" v-model="genreType">
             <DropDownItem
               v-for="gen in genre"
               :key="gen"
@@ -120,7 +148,7 @@ function addType(item: any) {
       </div>
       <div class="flex flex-col max-w-xs">
         <label for="">Sort Movies</label>
-        <DropdownInput placeholder=" sort movies">
+        <DropdownInput placeholder=" sort movies" v-model="sortMovieby">
           <DropDownItem
             v-for="sort in sortTypes"
             :key="sort"
@@ -139,8 +167,8 @@ function addType(item: any) {
           <InputData placeholder="2000" v-model="yearOfRelease" />
         </div>
         <div class="flex flex-col">
-          <label for="" class="text-slate-900">t</label>
-          <submitButton text="Search Movie" @on-clicked="getMovieById()" />
+          <label for="" class="">Search by ID or Year</label>
+          <submitButton text="Search " @on-clicked="getMovieById()" />
         </div>
       </div>
     </div>
@@ -154,10 +182,15 @@ function addType(item: any) {
           <p>{{ item.Title }}</p>
           <h4>Year: {{ item.Year }}</h4>
         </div>
+        <div class="all-sta">
+          <StarRating></StarRating>
+        </div>
       </div>
     </div>
+
     <div class="mt-3">
       <singleMovie :movie="singleMovieFilter" v-if="singleMovieFilter" />
     </div>
+    <div class="w-full justify-center" v-if="loading"><loader /></div>
   </div>
 </template>
