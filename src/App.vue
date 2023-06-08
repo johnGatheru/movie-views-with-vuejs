@@ -108,7 +108,7 @@ function addType(item: any) {
 <template>
   <div class="p-3 bg-slate-900 text-white min-h-screen relative">
     <div class="sticky bg-slate-900 inset-x-0 top-0">
-      <h2 class="text-red-600">The movies</h2>
+      <h2 class="text-red-600 font-bold">Movie Filter</h2>
       <div class="flex gap-4">
         <div class="flex flex-col">
           <label for="">Movie Type</label>
