@@ -3,4 +3,24 @@
 @tailwind components;
 @tailwind utilities;
 
+/* .all-stars input{
+    display: none;
+} */
+.all-stars span{
+    font-size: 23px;
+    color:gold;
+   
+    padding:10px;
+    transition:all 0.2s ease
+}
+.all-stars input:not(:checked) ~ span:hover, 
+.all-stars input:not(:checked) ~ span:hover ~ span{
+    color: #fd4;
+}
+.all-stars input:checked ~span{
+    color: #fd4;
+}
+/* .all-stars input:checked ~span{
+    color: #fd4;
+} */
 
