@@ -1,28 +1,28 @@
 <script setup lang="ts">
 import { ref } from "vue";
+const props = defineProps<{
+  rating?: number;
+}>();
 
-const rating = ref(3);
+const ratings = ref();
+ratings.value = props.rating;
 const maxStars = ref(5);
-
-function selectStar(star: any, index: number) {
-  rating.value = star;
-  console.log("index", index + 1);
+const emit = defineEmits(["currentRating"]);
+function selectStar(star: any) {
+  emit("currentRating", star);
+  ratings.value = star;
 }
 </script>
 <template>
   <div class="star-rating">
-    <span
-      v-for="(star, index) in maxStars"
-      :key="star"
-      @click="selectStar(star, index)"
-    >
+    <span v-for="star in maxStars" :key="star" @click="selectStar(star)">
       <svg
-        :class="{ selected: star <= rating }"
+        :class="{ selected: star <= ratings }"
         xmlns="http://www.w3.org/2000/svg"
         viewBox="0 0 24 24"
       >
         <path
-          :class="{ filled: star <= rating }"
+          :class="{ filled: star <= ratings }"
           d="M12 2.69l2.76 8.45H22l-6.64 4.83 2.67 8.46L12 17.34l-6.04 4.09 2.66-8.46L2 11.14h7.24L12 2.69z"
         />
       </svg>
