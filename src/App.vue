@@ -15,13 +15,17 @@ import submitButton from "./components/submitButton.vue";
 import singleMovie from "./components/singleMovie.vue";
 import { sortMovies } from "./composables/sortMovies";
 import StarRating from "./components/starRating.vue";
+import rateMovie from "./composables/rateMovies";
+import getRatingsFromLocal from "./composables/getRatings";
 // let url = "https://www.omdbapi.com/?apikey=5389fe45";
 type movie = {
   Poster: string;
   Title: string;
   Type: string;
   Year: string;
-  imdbiD: string;
+  imdbID: string;
+  averageRatings: string;
+  ratings: [string];
 };
 const movieType = ref();
 const sortMovieby = ref();
@@ -35,11 +39,11 @@ const types = ref(["movie", "series", "episode"]);
 const genre = ref(["drama", "action", "comedy"]);
 const sortTypes = ref(["Year", "Title"]);
 
-const movieCreated = ref();
+const movieCreated = ref([]) as Ref<movie[]>;
 const toSortMovies = ref();
 const singleMovieFilter = ref();
 async function getAllMovies() {
-  movieCreated.value = null;
+  movieCreated.value = [];
 
   loading.value = true;
   let typeMovie = selectedMovieType.value;
@@ -49,14 +53,20 @@ async function getAllMovies() {
   let response = await getMovie(typeMovie, id);
   singleMovieFilter.value = null;
   loading.value = false;
-  movieCreated.value = response.Search as movie;
-  toSortMovies.value = response.Search as movie;
+  response.Search.forEach((element: any) => {
+    getRatingsFromLocal(element);
+    movieCreated.value.push(getRatingsFromLocal(element));
+    // toSortMovies.value.push(getRatingsFromLocal(element));
+  });
+  // console.log("mamovie", movieCreated.value);
+  // movieCreated.value = response.Search as movie[];
+  // toSortMovies.value = response.Search as movie[];
   let toBeRated = JSON.stringify(toSortMovies.value);
   // console.log("movies", toBeRated);
   let ratings = [];
-  toSortMovies.value.forEach((element: any) => {
-    element.imdbiD;
-  });
+  // toSortMovies.value.forEach((element: any) => {
+  //   element.imdbiD;
+  // });
 
   // localStorage.setItem("movie", JSON.stringify(toSortMovies.value));
 }
@@ -64,15 +74,15 @@ async function getMovieById() {
   let title = movieTitle.value;
   let year = yearOfRelease.value;
   if (year.length || title.length) {
-    movieCreated.value = null;
+    movieCreated.value = [];
     loading.value = true;
     let movieType = selectedMovieType.value;
 
     if (year.length) {
       singleMovieFilter.value = null;
       let moviesResponse = await getByIdorTitle(year, title, movieType);
-      movieCreated.value = moviesResponse.Search as movie;
-      toSortMovies.value = moviesResponse.Search as movie;
+      movieCreated.value = moviesResponse.Search as movie[];
+      toSortMovies.value = moviesResponse.Search as movie[];
       loading.value = false;
     } else if (title.length) {
       let singleResponse = await getByTitle(year, title);
@@ -83,12 +93,12 @@ async function getMovieById() {
 }
 async function getGenre(gen: string) {
   genreType.value = gen;
-  movieCreated.value = null;
+  movieCreated.value = [];
   loading.value = true;
   let theMovies = await getAllGenres(gen);
   loading.value = false;
-  movieCreated.value = theMovies.Search as movie;
-  toSortMovies.value = theMovies.Search as movie;
+  movieCreated.value = theMovies.Search as movie[];
+  toSortMovies.value = theMovies.Search as movie[];
 }
 function sortItems(sort: string) {
   let movies = toSortMovies.value;
@@ -98,10 +108,25 @@ function sortItems(sort: string) {
 }
 
 onMounted(async () => {
+  let allRatings = localStorage.getItem("movieRatings");
+  if (allRatings == undefined) {
+    localStorage.setItem("movieRatings", JSON.stringify([]));
+  }
   await getAllMovies();
 });
 function addType(item: any) {
   selectedMovieType.value = item;
+}
+function checkData(data: number, id: string) {
+  let ratingResponse = rateMovie(data, id);
+  const movie = ratingResponse.find((movie: any) => movie.id === id);
+  if (movie) {
+    movieCreated.value.forEach((element) => {
+      if (element.imdbID === movie.id) {
+        element.averageRatings = movie.averageRatings;
+      }
+    });
+  }
 }
 </script>
 
@@ -182,8 +207,14 @@ function addType(item: any) {
           <p>{{ item.Title }}</p>
           <h4>Year: {{ item.Year }}</h4>
         </div>
-        <div class="all-sta">
-          <StarRating></StarRating>
+        <div class="flex gap-2 items-center">
+          <StarRating
+            :rating="item.ratings ? item.ratings[item.ratings?.length - 1] : 0"
+            @currentRating="checkData($event, item.imdbID)"
+          ></StarRating>
+          <p class="text-sm items-center" v-if="item.averageRatings">
+            Av Rating {{ item.averageRatings }}
+          </p>
         </div>
       </div>
     </div>
@@ -191,6 +222,7 @@ function addType(item: any) {
     <div class="mt-3">
       <singleMovie :movie="singleMovieFilter" v-if="singleMovieFilter" />
     </div>
+
     <div class="w-full justify-center" v-if="loading"><loader /></div>
   </div>
 </template>
