@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref } from "vue";
 const props = defineProps<{
-  rating?: number;
+  rating?: number | string;
 }>();
 
 const ratings = ref();

@@ -201,7 +201,7 @@ function checkData(data: number, id: string) {
       class="grid grid-cols-1 md:grid-cols-4 gap-4 overflow-x-auto mt-3"
       v-if="!singleMovieFilter"
     >
-      <div class="" v-for="item in movieCreated" :key="item">
+      <div class="" v-for="(item, index) in movieCreated" :key="index">
         <div class="flex flex-col">
           <img :src="item.Poster" alt="" class="w-full h-72 object-cover" />
           <p>{{ item.Title }}</p>
