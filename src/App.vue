@@ -132,6 +132,7 @@ function showReviews(id: any) {
 function checkData(data: any, rate?: number) {
   let currentReview = review.value;
   let ratingResponse = rateMovie(rate, data, currentReview);
+  review.value = "";
   const movie = ratingResponse.find((movie: any) => movie.id === data.imdbID);
   if (movie) {
     movieCreated.value.forEach((element) => {
