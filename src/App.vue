@@ -26,6 +26,7 @@ type movie = {
   imdbID: string;
   averageRatings: string;
   ratings: [string];
+  reviews: [string];
 };
 const movieType = ref();
 const sortMovieby = ref();
@@ -34,6 +35,8 @@ const yearOfRelease = ref("");
 const movieTitle = ref("");
 const loading = ref(false);
 const movieId = ref(0);
+const idToShowTextArea = ref();
+const showTextArea = ref(false);
 const selectedMovieType = ref("movie");
 const types = ref(["movie", "series", "episode"]);
 const genre = ref(["drama", "action", "comedy"]);
@@ -42,6 +45,7 @@ const sortTypes = ref(["Year", "Title"]);
 const movieCreated = ref([]) as Ref<movie[]>;
 const toSortMovies = ref();
 const singleMovieFilter = ref();
+const review = ref("");
 async function getAllMovies() {
   movieCreated.value = [];
 
@@ -117,13 +121,23 @@ onMounted(async () => {
 function addType(item: any) {
   selectedMovieType.value = item;
 }
-function checkData(data: number, id: string) {
-  let ratingResponse = rateMovie(data, id);
-  const movie = ratingResponse.find((movie: any) => movie.id === id);
+function showReviews(id: any) {
+  if (id == idToShowTextArea.value) {
+    idToShowTextArea.value = null;
+  } else {
+    idToShowTextArea.value = id;
+    showTextArea.value = true;
+  }
+}
+function checkData(data: any, rate?: number) {
+  let currentReview = review.value;
+  let ratingResponse = rateMovie(rate, data, currentReview);
+  const movie = ratingResponse.find((movie: any) => movie.id === data.imdbID);
   if (movie) {
     movieCreated.value.forEach((element) => {
       if (element.imdbID === movie.id) {
         element.averageRatings = movie.averageRatings;
+        element.reviews = movie.reviews;
       }
     });
   }
@@ -210,11 +224,44 @@ function checkData(data: number, id: string) {
         <div class="flex gap-2 items-center">
           <StarRating
             :rating="item.ratings ? item.ratings[item.ratings?.length - 1] : 0"
-            @currentRating="checkData($event, item.imdbID)"
+            @currentRating="checkData(item, $event)"
           ></StarRating>
           <p class="text-sm items-center" v-if="item.averageRatings">
             Av Rating {{ item.averageRatings }}
           </p>
+        </div>
+        <button
+          class="bg-none outline-none text-xs underline"
+          @click="showReviews(item.imdbID)"
+        >
+          View Reviews
+        </button>
+
+        <div
+          class="flex flex-col absolute"
+          v-if="idToShowTextArea == item.imdbID && showTextArea"
+        >
+          <div
+            class="flex flex-col"
+            v-for="review in item.reviews"
+            :key="review"
+          >
+            <p class="bg-gray-700 p-1 mt-1 rounded-lg text-xs">
+              {{ review }}
+            </p>
+          </div>
+          <textarea
+            name=""
+            id=""
+            v-model="review"
+            class="text-gray-800 text-xs outline-none p-2"
+          ></textarea>
+          <button
+            class="text-xs bg-red-950 rounded-3xl font-bold mt-1 px-[2px]"
+            @click="checkData(item)"
+          >
+            Send Review
+          </button>
         </div>
       </div>
     </div>
