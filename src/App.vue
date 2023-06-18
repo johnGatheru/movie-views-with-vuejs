@@ -44,6 +44,7 @@ const idToShowTextArea = ref();
 const listToRender = ref();
 const showTextArea = ref(false);
 const showFavouriteList = ref(false);
+const createList = ref(false);
 const selectedMovieType = ref("movie");
 const types = ref(["movie", "series", "episode"]);
 const genre = ref(["drama", "action", "comedy"]);
@@ -152,6 +153,7 @@ function showCustomList() {
   customMoviews.value = !customMoviews.value;
   if (buttonShow.value == "Show") {
     buttonShow.value = "Hide";
+    createList.value = true;
   } else {
     buttonShow.value = "Show";
   }
@@ -205,7 +207,7 @@ function checkData(data: any, rate?: number) {
         }
       });
     }
-  } else alert("please add a review");
+  }
 }
 </script>
 
