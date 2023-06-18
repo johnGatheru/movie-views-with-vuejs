@@ -19,6 +19,8 @@ import rateMovie from "./composables/rateMovies";
 import getRatingsFromLocal from "./composables/getRatings";
 import addListToLocal from "./composables/createCustomMovies";
 import favoriteList from "./components/favoriteList.vue";
+import addSelection from "./composables/addMostFrequent";
+import getFrequentItem from "./composables/getMostFrequent";
 // let url = "https://www.omdbapi.com/?apikey=5389fe45";
 type movie = {
   Poster: string;
@@ -50,6 +52,7 @@ const sortTypes = ref(["Year", "Title"]);
 const movieCreated = ref([]) as Ref<movie[]>;
 const selectedMovies = ref([]) as Ref<movie[]>;
 const myFavouriteLists = ref([]) as Ref<any[]>;
+const frequentSelected = ref("");
 const toSortMovies = ref();
 const singleMovieFilter = ref();
 const review = ref("");
@@ -59,7 +62,10 @@ async function getAllMovies() {
   movieCreated.value = [];
 
   loading.value = true;
-  let typeMovie = selectedMovieType.value;
+  let typeMovie = frequentSelected.value
+    ? frequentSelected.value
+    : selectedMovieType.value;
+  // let typeMovie = selectedMovieType.value;
 
   let id = movieId.value;
 
@@ -96,9 +102,12 @@ async function getMovieById() {
 async function getGenre(gen: string) {
   genreType.value = gen;
   movieCreated.value = [];
+
   loading.value = true;
   let theMovies = await getAllGenres(gen);
   loading.value = false;
+  let added = addSelection(gen);
+  console.log("gen hit");
   movieCreated.value = theMovies.Search as movie[];
   toSortMovies.value = theMovies.Search as movie[];
 }
@@ -115,16 +124,25 @@ onMounted(async () => {
     localStorage.setItem("movieRatings", JSON.stringify([]));
   }
   var allMovieCustom = localStorage.getItem("customList");
-  if (allMovieCustom == undefined) {
-    localStorage.setItem("customList", JSON.stringify([]));
-  }
-  await getAllMovies();
   if (allMovieCustom !== null) {
     myFavouriteLists.value = JSON.parse(allMovieCustom);
   }
+  if (allMovieCustom == undefined) {
+    localStorage.setItem("customList", JSON.stringify([]));
+  }
+  var allSuggestions = localStorage.getItem("suggestions");
+  if (allSuggestions == undefined) {
+    localStorage.setItem("suggestions", JSON.stringify([]));
+  }
+  let frequent = getFrequentItem();
+  console.log("most frequent", frequent);
+  frequentSelected.value = frequent;
+  await getAllMovies();
 });
 function addType(item: any) {
   selectedMovieType.value = item;
+  frequentSelected.value = item;
+  let added = addSelection(item);
 }
 function displayList(list: any) {
   listToRender.value = list;
@@ -134,15 +152,19 @@ function showCustomList() {
   customMoviews.value = !customMoviews.value;
   if (buttonShow.value == "Show") {
     buttonShow.value = "Hide";
-  } else buttonShow.value = "Show";
+  } else {
+    buttonShow.value = "Show";
+  }
 }
 function addMovieToList(item: movie) {
-  if (selectedMovies.value.includes(item)) {
-    const index = selectedMovies.value.indexOf(item);
-    if (index > -1) {
-      selectedMovies.value.splice(index, 1);
-    }
-  } else selectedMovies.value.push(item);
+  const index = selectedMovies.value.findIndex(
+    (ele) => JSON.stringify(ele) === JSON.stringify(item)
+  );
+  if (index === -1) {
+    selectedMovies.value.push(item);
+  } else {
+    selectedMovies.value.splice(index, 1);
+  }
 }
 
 function creteCustomList() {
@@ -170,18 +192,20 @@ function showReviews(id: any) {
   }
 }
 function checkData(data: any, rate?: number) {
-  let currentReview = review.value;
-  let ratingResponse = rateMovie(rate, data, currentReview);
-  review.value = "";
-  const movie = ratingResponse.find((movie: any) => movie.id === data.imdbID);
-  if (movie) {
-    movieCreated.value.forEach((element) => {
-      if (element.imdbID === movie.id) {
-        element.averageRatings = movie.averageRatings;
-        element.reviews = movie.reviews;
-      }
-    });
-  }
+  if (review.value) {
+    let currentReview = review.value;
+    let ratingResponse = rateMovie(rate, data, currentReview);
+    review.value = "";
+    const movie = ratingResponse.find((movie: any) => movie.id === data.imdbID);
+    if (movie) {
+      movieCreated.value.forEach((element) => {
+        if (element.imdbID === movie.id) {
+          element.averageRatings = movie.averageRatings;
+          element.reviews = movie.reviews;
+        }
+      });
+    }
+  } else alert("please add a review");
 }
 </script>
 
@@ -297,6 +321,7 @@ function checkData(data: any, rate?: number) {
               @click="addMovieToList(item)"
             />
             <img
+              @click="addMovieToList(item)"
               v-if="selectedMovies.includes(item)"
               src="@/assets/icons/tick.svg"
               alt=""
@@ -325,7 +350,7 @@ function checkData(data: any, rate?: number) {
           </button>
 
           <div
-            class="flex flex-col absolute"
+            class="flex flex-col absolute z-50"
             v-if="idToShowTextArea == item.imdbID && showTextArea"
           >
             <div
