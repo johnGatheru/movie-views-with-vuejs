@@ -271,7 +271,7 @@ function checkData(data: any, rate?: number) {
           <InputData placeholder="2000" v-model="yearOfRelease" />
         </div>
         <div class="flex flex-col">
-          <label for="" class="">Search by ID or Year</label>
+          <label for="" class="">Search by Title or Year</label>
           <submitButton text="Search " @on-clicked="getMovieById()" />
         </div>
         <div class="flex flex-col relative">
