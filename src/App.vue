@@ -37,6 +37,7 @@ const sortMovieby = ref();
 const genreType = ref();
 const yearOfRelease = ref("");
 const movieTitle = ref("");
+const movieRender = ref("");
 const loading = ref(false);
 const movieId = ref(0);
 const customMoviews = ref(false);
@@ -69,6 +70,7 @@ async function getAllMovies() {
   // let typeMovie = selectedMovieType.value;
 
   let id = movieId.value;
+  movieRender.value = typeMovie;
 
   let response = await getMovie(typeMovie, id);
   singleMovieFilter.value = null;
@@ -106,6 +108,7 @@ async function getGenre(gen: string) {
 
   loading.value = true;
   let theMovies = await getAllGenres(gen);
+  movieRender.value = gen;
   loading.value = false;
   let added = addSelection(gen);
   console.log("gen hit");
@@ -247,7 +250,10 @@ function checkData(data: any, rate?: number) {
 
         <div class="flex flex-col">
           <label for="" class="text-slate-900">t</label>
-          <submitButton text="Search Movie" @on-clicked="getAllMovies()" />
+          <submitButton
+            text="Search by Movie Type Or ID"
+            @on-clicked="getAllMovies()"
+          />
         </div>
       </div>
       <div class="flex flex-col max-w-xs">
@@ -307,77 +313,83 @@ function checkData(data: any, rate?: number) {
         </button>
       </div>
     </div>
-    <div class="flex">
-      <div
-        class="flex flex-wrap gap-4 overflow-x-auto mt-3 relative"
-        v-if="!singleMovieFilter"
-      >
-        <div class="" v-for="(item, index) in movieCreated" :key="index">
-          <div class="flex flex-col relative hover:cursor-pointer">
-            <img
-              :src="item.Poster"
-              alt="loading"
-              class="w-full h-72 object-cover duration-300 ease-in-out hover:scale-105"
-              @click="addMovieToList(item)"
-            />
-            <img
-              @click="addMovieToList(item)"
-              v-if="selectedMovies.includes(item)"
-              src="@/assets/icons/tick.svg"
-              alt=""
-              width="100"
-              class="absolute top-1/2 left-1/2 -translate-y-1/2 -translate-x-1/2"
-            />
-            <p>{{ item.Title }}</p>
-            <h4>Year: {{ item.Year }}</h4>
-          </div>
-          <div class="flex gap-2 items-center">
-            <StarRating
-              :rating="
-                item.ratings ? item.ratings[item.ratings?.length - 1] : 0
-              "
-              @currentRating="checkData(item, $event)"
-            ></StarRating>
-            <p class="text-sm items-center" v-if="item.averageRatings">
-              Av Rating {{ item.averageRatings }}
-            </p>
-          </div>
-          <button
-            class="bg-none outline-none text-xs underline"
-            @click="showReviews(item.imdbID)"
-          >
-            View Reviews
-          </button>
-
-          <div
-            class="flex flex-col absolute z-50"
-            v-if="idToShowTextArea == item.imdbID && showTextArea"
-          >
-            <div
-              class="flex flex-col"
-              v-for="review in item.reviews"
-              :key="review"
-            >
-              <p class="bg-gray-700 p-1 mt-1 rounded-lg text-xs">
-                {{ review }}
+    <div class="flex flex-col">
+      <div class="text-orange-800 font-bold underline text-lg flex gap-2">
+        {{ capitalizeFirstLetter(movieRender) }}
+        <p>Display</p>
+      </div>
+      <div class="flex">
+        <div
+          class="flex flex-wrap gap-4 overflow-x-auto mt-3 relative"
+          v-if="!singleMovieFilter"
+        >
+          <div class="" v-for="(item, index) in movieCreated" :key="index">
+            <div class="flex flex-col relative hover:cursor-pointer">
+              <img
+                :src="item.Poster"
+                alt="loading"
+                class="w-full h-72 object-cover duration-300 ease-in-out hover:scale-105"
+                @click="addMovieToList(item)"
+              />
+              <img
+                @click="addMovieToList(item)"
+                v-if="selectedMovies.includes(item)"
+                src="@/assets/icons/tick.svg"
+                alt=""
+                width="100"
+                class="absolute top-1/2 left-1/2 -translate-y-1/2 -translate-x-1/2"
+              />
+              <p>{{ item.Title }}</p>
+              <h4>Year: {{ item.Year }}</h4>
+            </div>
+            <div class="flex gap-2 items-center">
+              <StarRating
+                :rating="
+                  item.ratings ? item.ratings[item.ratings?.length - 1] : 0
+                "
+                @currentRating="checkData(item, $event)"
+              ></StarRating>
+              <p class="text-sm items-center" v-if="item.averageRatings">
+                Av Rating {{ item.averageRatings }}
               </p>
             </div>
-            <textarea
-              name=""
-              id=""
-              v-model="review"
-              class="text-gray-800 text-xs outline-none p-2"
-            ></textarea>
             <button
-              class="text-xs bg-red-950 rounded-3xl font-bold mt-1 px-[2px]"
-              @click="checkData(item)"
+              class="bg-none outline-none text-xs underline"
+              @click="showReviews(item.imdbID)"
             >
-              Send Review
+              View Reviews
             </button>
+
+            <div
+              class="flex flex-col absolute z-50"
+              v-if="idToShowTextArea == item.imdbID && showTextArea"
+            >
+              <div
+                class="flex flex-col"
+                v-for="review in item.reviews"
+                :key="review"
+              >
+                <p class="bg-gray-700 p-1 mt-1 rounded-lg text-xs">
+                  {{ review }}
+                </p>
+              </div>
+              <textarea
+                name=""
+                id=""
+                v-model="review"
+                class="text-gray-800 text-xs outline-none p-2"
+              ></textarea>
+              <button
+                class="text-xs bg-red-950 rounded-3xl font-bold mt-1 px-[2px]"
+                @click="checkData(item)"
+              >
+                Send Review
+              </button>
+            </div>
           </div>
         </div>
+        <favoriteList :movieList="listToRender" v-if="showFavouriteList" />
       </div>
-      <favoriteList :movieList="listToRender" v-if="showFavouriteList" />
     </div>
 
     <div class="mt-3">
